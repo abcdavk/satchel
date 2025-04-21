@@ -1,16 +1,12 @@
-import { Direction, EntityComponentTypes, ItemStack, system, world } from "@minecraft/server";
+import { world, system, EntityComponentTypes, ItemStack, Direction, Dimension, Vector3 } from "@minecraft/server";
+import { ActionFormData } from "@minecraft/server-ui";
 
-function getParsedLore(lore: string[]): string[] {
-    return lore.map(line => {
-        const parts = line.split(":");
-        if (parts.length < 2) return "";
-        return parts.slice(1).join(":").trim();
-    });
-}
+import { QIDB } from './QIDB.js';
+const Inventories = new QIDB('inventories', 10, 270)
 
 function createCredential(length: number): string {
     const keys = "abcdefghijklmnopqrstuvwxyz";
-    let result = "";
+    let result = ``;
 
     for (let i = 0; i < length; i++) {
         const randomChar = keys[Math.floor(Math.random() * keys.length)];
@@ -19,6 +15,18 @@ function createCredential(length: number): string {
 
     return result;    
 }
+
+// function spawnItemWithAmount(dim: Dimension, itemId: string, amount: number, location: Vector3) {
+//     const maxStack = 255;
+//     let remaining = amount;
+
+//     while (remaining > 0) {
+//         const stackAmount = Math.min(remaining, maxStack);
+//         const stack = new ItemStack(itemId, stackAmount);
+//         dim.spawnItem(stack, location);
+//         remaining -= stackAmount;
+//     }
+// }
 
 export function formatIdToName(typeId: string): string {
     // Remove namespace
@@ -30,202 +38,188 @@ export function formatIdToName(typeId: string): string {
     return capitalized;
 }
 
-
-
-world.afterEvents.playerSpawn.subscribe(({
-    player
-}) => {
-    if (player.getDynamicProperty("satchel")) {
-        player.setDynamicProperty("satchel", false);
-        player.setDynamicProperty("satchelMode", "Binding")
-    }
-})
-
-let switchCooldown = new Map();
-
 system.runInterval(() => {
-    world.getPlayers().forEach(p => {
-        let inv = p.getComponent(EntityComponentTypes.Inventory)
+     world.getPlayers().forEach(player => {
+        let inv = player.getComponent(EntityComponentTypes.Inventory)
         let con = inv?.container
 
         if (inv && con) {
-            let selectedSatchel = con.getItem(p.selectedSlotIndex);
-            let selectedLore = selectedSatchel?.getLore();
-            if (selectedSatchel && selectedSatchel.typeId === "dave:satchel" && selectedLore) {
-                if (!selectedLore.some(line => line.includes("none"))) {
-                    let parsedLore = getParsedLore(selectedLore);
-                    p.onScreenDisplay.setActionBar(`${formatIdToName(parsedLore[0])} ${parsedLore[1]}x \nMode: ${p.getDynamicProperty("satchelMode")}`);
-                }
-            }
             for (let i = 0; i < inv?.inventorySize; i++) {
-                if (con.getItem(i)?.typeId === "dave:satchel") {
-                    
+                if (con.getItem(i)?.hasTag("dave:satchel")) {
                     let satchelItem = con?.getItem(i);
                     let satchelLore = satchelItem?.getLore();
 
-                    
-                    if (!satchelLore || !satchelLore.some(line => line.includes("§"))) {
-                        
-                        let credential = createCredential(10);
-                        satchelItem?.setLore([
-                            `§r§cItem§c: none`,
-                            `§r§cAmount§c: 0`,
-                            `§r§7Mode§e: ${p.getDynamicProperty("satchelMode")}`,
-                            `${credential}`
-                        ]);
-                        console.warn(credential)
+                    let savedItem = satchelItem?.getDynamicProperty("satchel:item") as string;
+                    let savedAmount = satchelItem?.getDynamicProperty("satchel:amount") as number || 0;
+
+                    // create credential to avoid duplication - init
+                    if (!satchelItem?.getDynamicProperty("satchel:credential")) {
+                        satchelItem?.setDynamicProperty("satchel:credential", createCredential(10));
                         con.setItem(i, satchelItem)
-                    } else {
-                        if (p.getDynamicProperty("satchel") && !satchelLore.some(line => line.includes("none"))) {
-                            let lore = getParsedLore(satchelLore)
-                            let itemId = lore[0];
-                            let itemAmount = parseInt(lore[1]);
-                            for (let j = 0; j < inv?.inventorySize; j++) {
-                                if (con.getItem(j)?.typeId === itemId) {
-                                    itemAmount += con?.getItem(j)?.amount as number;
-                                    con.setItem(j, undefined);
+                    }
+                    for (let j = 0; j < inv?.inventorySize; j++) {
+                        let satchelCredential = satchelItem?.getDynamicProperty("satchel:credential") as string;
+                        if (satchelCredential !== undefined) {
+                            let detectedItem = con.getItem(j) as ItemStack;
+                    
+                            // trytobindvalue return satchel credential
+                            try {
+                                let tryToBindValue = player.getDynamicProperty("tryingtobind") as string;
+                                if (tryToBindValue) {
+                                    // let bindItem = con.getItem(j);
+                                    let bindItem = Inventories.get(satchelCredential) as ItemStack;
+                                    if (bindItem.typeId === con.getItem(j)?.typeId) {
+                                        savedAmount += detectedItem?.amount; // FIXED: was overwritten before
+                        
+                                        satchelItem?.setDynamicProperty("satchel:item", bindItem.typeId);
+                                        satchelItem?.setDynamicProperty("satchel:amount", savedAmount);
+                                        satchelItem?.setDynamicProperty("satchel:enable", true);
+                                        
+                                        satchelItem?.setLore([
+                                            `§r§7Item:§e ${formatIdToName(bindItem.typeId)}`,
+                                            `§r§7Amount:§e ${savedAmount}`, // FIXED: use countAmount, not savedAmount
+                                        ]);
+
+                                        con.setItem(i, satchelItem);
+                                        con.setItem(j, undefined); // move this here too
+                                        player.setDynamicProperty("tryingtobind");
+                                        console.warn("bind success")
+                                    }
                                 }
-                                if (con.getItem(i)?.typeId === "dave:satchel") {
-                                    let satchelItem = con?.getItem(i);
-                                    const currentMode = p.getDynamicProperty("satchelMode") as string;
-                                    satchelItem?.setLore([
-                                        `§r§7Item§e: ${itemId}`,
-                                        `§r§7Amount§e: ${itemAmount}`,
-                                        `§r§7Mode§e: ${currentMode}`,
-                                        `${satchelLore[3]}`
-                                    ]);
-                                    con.setItem(i, satchelItem);
+                            } catch (err) {
+                                
+                            }
+
+                            if (satchelItem?.getDynamicProperty("satchel:enable")) {
+                                if (detectedItem && savedItem === detectedItem.typeId) {
+                                    savedAmount += detectedItem?.amount; // FIXED: was overwritten before
+                                    con.setItem(j, undefined);
                                 }
                             }
                         }
-                    }
-                }
-            }
-            if (p.isSneaking && inv && con) {
-                const SATCHEL_MODES = ["Binding", "Switch Mode", "Placing Block", "Placing satchel", "Unpack"];
-    
-                const currentTime = Date.now();
-                const lastSwitch = switchCooldown.get(p.id) || 0;
-                if (currentTime - lastSwitch < 1000) return;
-    
-                for (let i = 0; i < inv.inventorySize; i++) {
-                    const satchelItem = con.getItem(i);
-                    if (satchelItem?.typeId === "dave:satchel") {
-                        let satchelLore = satchelItem?.getLore();
-                        let lore = getParsedLore(satchelLore)
-                        let itemId = lore[0];
-                        let itemAmount = parseInt(lore[1]);
-                        const currentMode = p.getDynamicProperty("satchelMode") as string;
-                        let currentIndex = SATCHEL_MODES.indexOf(currentMode);
-                        let nextIndex = (currentIndex + 1) % SATCHEL_MODES.length;
-                        let nextMode = SATCHEL_MODES[nextIndex];
-    
-                        p.setDynamicProperty("satchelMode", nextMode);
-    
-                        
-                        
+                    }    
+                    
+                    if (savedItem && savedAmount) {
                         satchelItem?.setLore([
-                            `§r§7Item§e: ${itemId}`,
-                            `§r§7Amount§e: ${itemAmount}`,
-                            `§r§7Mode§e: ${nextMode}`,
-                            `${satchelLore[3]}`
+                            `§r§7Item:§e ${formatIdToName(savedItem)}`,
+                            `§r§7Amount:§e ${savedAmount}`, // FIXED: use countAmount, not savedAmount
                         ]);
+                        satchelItem?.setDynamicProperty("satchel:amount", savedAmount);
                         con.setItem(i, satchelItem);
-    
-                        // Set cooldown
-                        switchCooldown.set(p.id, currentTime);
-                        break;
                     }
                 }
             }
-        }        
+        }
     });
-});
+})
 
-world.afterEvents.itemUse.subscribe(({
-    source: p,
-    itemStack
-}) => {
-    let inv = p.getComponent(EntityComponentTypes.Inventory);
+world.beforeEvents.itemUse.subscribe((data) => {
+    let {
+        itemStack,
+        source: player
+    } = data;
+    let inv = player.getComponent(EntityComponentTypes.Inventory);
     let con = inv?.container;
 
-    let dim = world.getDimension(p.dimension.id);
+    let dim = world.getDimension(player.dimension.id);
+    
+    // trytobindvalue return satchel credential
+    let tryToBindValue = player.getDynamicProperty("tryingtobind") as string
+    if (tryToBindValue && !itemStack.hasTag("dave:satchel")) {
+        let bindItem = itemStack;
+        Inventories.set(tryToBindValue, bindItem);
+        
+        data.cancel = true;
+    }
 
-    if (p.hasTag("satchel:binding") && itemStack.typeId !== "dave:satchel") {
+    if (itemStack.hasTag("dave:satchel")) {
+        let satchelItem = itemStack;
+        let satchelLore = satchelItem?.getLore();
 
-        if (inv && con) {
-            for (let i = 0; i < inv.inventorySize; i++) {
-                if (con.getItem(i)?.typeId === "dave:satchel") {
-                    let satchelItem = con.getItem(i);
-                    let satchelLore = satchelItem?.getLore();
-                    
-                    if (satchelLore && satchelLore[3] === p.getDynamicProperty("satchel:binding") && p.hasTag("satchel:binding")) {
-                        let credential = satchelLore[3];
-                        satchelItem?.setLore([
-                            `§r§7Item§e: ${itemStack.typeId}`,
-                            `§r§7Amount§e: 0`,
-                            `§r§7Mode§e: switch`,
-                            `${credential}`
-                        ]);
+        let savedItem = satchelItem?.getDynamicProperty("satchel:item") as string;
+        let savedAmount = satchelItem?.getDynamicProperty("satchel:amount") as number;
 
-                        p.setDynamicProperty(credential, itemStack.typeId)
-
-                        console.warn(credential)
-                        con?.setItem(i, satchelItem);
-                        p.removeTag("satchel:binding");
-
-                        
-                        p.setDynamicProperty("satchelMode", "Switch Mode");
-                        p.setDynamicProperty("satchel", true);
-                        p.setDynamicProperty("satchelBinding")
-                        p.sendMessage(`§aSuccessfully bind ${formatIdToName(itemStack.typeId)}`);
+        if (satchelLore.length === 0) {
+            player.sendMessage("§aSelect and use the item yo want to bind this satchel!");
+            player.setDynamicProperty("tryingtobind", satchelItem.getDynamicProperty("satchel:credential"));
+            console.warn(satchelItem.getDynamicProperty("satchel:credential"))
+        } else {
+            if (player.isSneaking) {
+                system.run(() => {
+                    let form = new ActionFormData()
+                        .title(`§l${formatIdToName(savedItem)} §rx${savedAmount}`)
+                    if (satchelItem.getDynamicProperty("satchel:placeBlock")) {
+                        form.button('§l§qPlace Block')
+                    } else {
+                        form.button('§l§cPlace Block')
                     }
-                }                
+                    form.button('§lPlace Satchel');
+                    if (satchelItem.getDynamicProperty("satchel:enable")) {
+                        form.button('§l§2Enable')
+                    } else {
+                        form.button('§l§cDisabled')
+                    }
+                    form.button('§lUnbind')
+                    form.button('§lCancel')
+                    form.show(player).then(r => {
+                        if (r.selection === 0) {
+                            // Place Block
+                            if (satchelItem.getDynamicProperty("satchel:placeBlock")) {
+                                // turn off
+                                player.sendMessage(`§cPlacing ${formatIdToName(savedItem)} disabled!`)
+                                satchelItem.setDynamicProperty("satchel:placeBlock", false);
+                                con?.setItem(player.selectedSlotIndex,satchelItem)
+                            } else {
+                                // turn on
+                                player.sendMessage(`§aPlacing ${formatIdToName(savedItem)} enabled!`)
+                                satchelItem.setDynamicProperty("satchel:placeBlock", true);
+                                con?.setItem(player.selectedSlotIndex,satchelItem)
+                            }
+                        }
+                        if (r.selection === 2) {
+                            // Enable Satchel
+                            if (satchelItem.getDynamicProperty("satchel:enable")) {
+                                // turn off
+                                player.sendMessage(`§c${formatIdToName(savedItem)} Satchel disabled!`)
+                                satchelItem.setDynamicProperty("satchel:enable", false);
+                                con?.setItem(player.selectedSlotIndex,satchelItem)
+                            } else {
+                                // turn on
+                                player.sendMessage(`§a${formatIdToName(savedItem)} Satchel enabled!`)
+                                satchelItem.setDynamicProperty("satchel:enable", true);
+                                con?.setItem(player.selectedSlotIndex,satchelItem)
+                            }
+                        }
+                        if (r.selection === 3) {
+                            // Unbind
+                            player.setDynamicProperty("tryingtobind");
+                            if (inv && savedAmount > inv?.inventorySize*64) {
+                                const maxStack = 64;
+                                let remaining = savedAmount;
+                                
+                                while (remaining > 0) {
+                                    const stackAmount = Math.min(remaining, maxStack);
+                                    const stack = new ItemStack(savedItem, stackAmount);
+                                    dim.spawnItem(stack, player.location);
+                                    remaining -= stackAmount;
+                                }
+                            } else {
+                                player.runCommand(`give @s ${savedItem} ${savedAmount}`)
+                            }
+                            satchelItem.setLore([]);
+                            satchelItem.clearDynamicProperties();
+
+                            con?.setItem(player.selectedSlotIndex, satchelItem)
+                        }
+                    });
+                });
             }
         }
     }
+})
 
-    if (itemStack.typeId === "dave:satchel") {
-        const lore = itemStack.getLore();
 
-        if (p.getDynamicProperty("satchelMode") === "Binding" || getParsedLore(lore)[0] === "none") {
-            if (lore.some(line => line.includes("none"))) {
-                p.sendMessage("§aSelect and use the item yo want to bind this satchel!");
-                p.addTag("satchel:binding");
-                p.setDynamicProperty("satchel:binding", lore[3]);
-            } else {
-                let credential = lore[3];
-                itemStack?.setLore([
-                    `§r§7Item§e: none`,
-                    `§r§7Amount§e: 0`,
-                    `§r§7Mode§e: Binding`,
-                    `${credential}`
-                ]);
-                let parsedLore = getParsedLore(lore);
-                p.runCommand(`give @s ${parsedLore[0]} ${parsedLore[1]}`);
-                p.setDynamicProperty("satchel", false)
-            }        
-        } 
-        if (getParsedLore(lore)[0] !== "none") {
-            if (p.getDynamicProperty("satchelMode") === "Switch Mode") {
-                console.warn("switching on/off")
-                if (!p.getDynamicProperty("satchel")) {
-                    p.setDynamicProperty("satchel", true);
-                    console.warn("Satchel active: Saving item");
-                } else {
-                    p.setDynamicProperty("satchel", false);
-                    console.warn("Satchel disabled");
-                }
-            } else if (p.getDynamicProperty("satchelMode") === "Placing satchel") {
-                console.warn("placing satchel")
-            } else if (p.getDynamicProperty("satchelMode") === "Unpack") {
-                console.warn("droping")
-            } else {
-                console.warn("Something else.")
-            }
-        }
-    }
-});
+
 const playerCooldowns = new Map<string, number>();
 
 world.beforeEvents.playerInteractWithBlock.subscribe(({
@@ -237,11 +231,9 @@ world.beforeEvents.playerInteractWithBlock.subscribe(({
     const playerId = player.id;
     const now = Date.now();
     const lastUsed = playerCooldowns.get(playerId) ?? 0;
-
     if (now - lastUsed < 260) {
         return;
     }
-
     playerCooldowns.set(playerId, now);
 
     let inv = player.getComponent(EntityComponentTypes.Inventory);
@@ -249,14 +241,17 @@ world.beforeEvents.playerInteractWithBlock.subscribe(({
 
     let dim = world.getDimension(player.dimension.id);
 
-    if (itemStack?.typeId === "dave:satchel") {
+    if (itemStack?.hasTag("dave:satchel")) {
+        let satchelItem = itemStack;
+        let satchelLore = satchelItem?.getLore();
+
+        let savedItem = satchelItem?.getDynamicProperty("satchel:item") as string;
+        let savedAmount = satchelItem?.getDynamicProperty("satchel:amount") as number;
+
         system.run(() => {
             const satchelLore = itemStack.getLore();
-            if (player.getDynamicProperty("satchelMode") === "Placing Block") {
-                let lore = getParsedLore(satchelLore)
-                let itemId = lore[0];
-                let itemAmount = parseInt(lore[1]);
-                if (itemAmount <= 0) return;
+            if (itemStack.getDynamicProperty("satchel:placeBlock")) {
+                if (savedAmount < 0) return;
 
                 if (
                     block.north(1)?.isAir ||
@@ -275,15 +270,11 @@ world.beforeEvents.playerInteractWithBlock.subscribe(({
                             [Direction.Up]: () => block.above(1),
                             [Direction.Down]: () => block.below(1)
                         };
-    
-                        faceMap[blockFace]?.()?.setType(itemId);
-                        itemStack.setLore([
-                            `§r§7Item§e: ${itemId}`,
-                            `§r§7Amount§e: ${itemAmount - 1}`,
-                            `§r§7Mode§e: ${player.getDynamicProperty("satchelMode")}`,
-                            `${satchelLore[3]}`
-                        ]);
-                        con?.setItem(player.selectedSlotIndex, itemStack);
+
+                        faceMap[blockFace]?.()?.setType(savedItem);
+
+                        satchelItem?.setDynamicProperty("satchel:amount", savedAmount-1);
+                        con?.setItem(player.selectedSlotIndex, satchelItem);
                     } catch (error) {
                         player.sendMessage(`§cThis item is unplaceable`)
                         return;

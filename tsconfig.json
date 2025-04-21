@@ -1,19 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2020",                // Output JavaScript modern
-    "module": "ESNext",                // Gunakan ES Modules (bukan CommonJS)
+    "target": "ES2020",
+    "module": "ESNext", 
     "moduleResolution": "node",
-    "outDir": "packs/BP/scripts",                  // Output folder untuk hasil .js
-    "strict": true,                    // Optional: untuk ketatkan type checking
-    "esModuleInterop": false,         // Tidak perlu interop dengan CommonJS
+    "outDir": "packs/BP/scripts",
+    "strict": true,              
+    "esModuleInterop": false,    
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noEmitOnError": true,            // Jangan hasilkan file kalau ada error
-    "declaration": false,             // Tidak perlu .d.ts
-    "sourceMap": false,               // Optional: bisa true kalau debugging
+    "noEmitOnError": true,        
+    "declaration": false,  
+    "allowJs": true,
+    "sourceMap": false,               
     "isolatedModules": true,
     "incremental": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules", "packs"]
 }

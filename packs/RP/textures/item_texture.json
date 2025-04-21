@@ -4,6 +4,54 @@
   "texture_data": {
     "satchel": {
       "textures": "textures/items/satchel"
+    },
+    "black_satchel": {
+      "textures": "textures/items/black_satchel"
+    },
+    "blue_satchel": {
+      "textures": "textures/items/blue_satchel"
+    },
+    "light_gray_satchel": {
+      "textures": "textures/items/light_gray_satchel"
+    },
+    "red_satchel": {
+      "textures": "textures/items/red_satchel"
+    },
+    "brown_satchel": {
+      "textures": "textures/items/brown_satchel"
+    },
+    "lime_satchel": {
+      "textures": "textures/items/lime_satchel"
+    },
+    "cyan_satchel": {
+      "textures": "textures/items/cyan_satchel"
+    },
+    "magenta_satchel": {
+      "textures": "textures/items/magenta_satchel"
+    },
+    "white_satchel": {
+      "textures": "textures/items/white_satchel"
+    },
+    "gray_satchel": {
+      "textures": "textures/items/gray_satchel"
+    },
+    "orange_satchel": {
+      "textures": "textures/items/orange_satchel"
+    },
+    "yellow_satchel": {
+      "textures": "textures/items/yellow_satchel"
+    },
+    "green_satchel": {
+      "textures": "textures/items/green_satchel"
+    },
+    "pink_satchel": {
+      "textures": "textures/items/pink_satchel"
+    },
+    "light_blue_satchel": {
+      "textures": "textures/items/light_blue_satchel"
+    },
+    "purple_satchel": {
+      "textures": "textures/items/purple_satchel"
     }
   }
 }
