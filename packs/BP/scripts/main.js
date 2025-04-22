@@ -34,6 +34,7 @@ system.runInterval(() => {
     world.getPlayers().forEach(player => {
         let inv = player.getComponent(EntityComponentTypes.Inventory);
         let con = inv?.container;
+        let dim = world.getDimension(player.dimension.id);
         if (inv && con) {
             for (let i = 0; i < inv?.inventorySize; i++) {
                 if (con.getItem(i)?.hasTag("dave:satchel")) {
@@ -93,6 +94,40 @@ system.runInterval(() => {
                 }
             }
         }
+        dim.getEntities({
+            type: "dave:satchel"
+        }).forEach(satchelSpawn => {
+            if (!satchelSpawn)
+                return;
+            let satchelInv = satchelSpawn.getComponent(EntityComponentTypes.Inventory);
+            let satchelCon = satchelInv?.container;
+            let savedItem = satchelSpawn.getDynamicProperty("satchel:item");
+            let savedAmount = satchelSpawn.getDynamicProperty("satchel:amount");
+            let satchelCredential = satchelSpawn.getDynamicProperty("satchel:credential");
+            let satchelColor = satchelSpawn.getDynamicProperty("satchel:color");
+            if (savedItem &&
+                savedAmount &&
+                satchelColor &&
+                satchelCredential &&
+                satchelInv &&
+                satchelCon) {
+                const maxStack = 1;
+                let remaining = savedAmount;
+                while (remaining > 0) {
+                    let currentSlot = satchelCon.getItem(0);
+                    if (!currentSlot) {
+                        const stack = new ItemStack(savedItem, maxStack);
+                        satchelCon.setItem(0, stack);
+                        remaining -= maxStack;
+                    }
+                    else {
+                        break;
+                    }
+                }
+                satchelSpawn.setDynamicProperty("satchel:amount", remaining);
+                // player.onScreenDisplay.setActionBar(`Remaining: ${remaining}`);
+            }
+        });
     });
 });
 world.beforeEvents.itemUse.subscribe((data) => {
@@ -122,20 +157,30 @@ world.beforeEvents.itemUse.subscribe((data) => {
                 system.run(() => {
                     let form = new ActionFormData()
                         .title(`§l${formatIdToName(savedItem)} §rx${savedAmount}`);
+                    // 0
                     if (satchelItem.getDynamicProperty("satchel:placeBlock")) {
-                        form.button('§l§qPlace Block');
+                        form.button('§l§2Place Block');
                     }
                     else {
                         form.button('§l§cPlace Block');
                     }
-                    form.button('§lPlace Satchel');
+                    // 1
+                    if (satchelItem.getDynamicProperty("satchel:placeSatchel")) {
+                        form.button('§l§2Place Satchel');
+                    }
+                    else {
+                        form.button('§l§cPlace Satchel');
+                    }
+                    // 2
                     if (satchelItem.getDynamicProperty("satchel:enable")) {
                         form.button('§l§2Enable');
                     }
                     else {
                         form.button('§l§cDisabled');
                     }
+                    // 3
                     form.button('§lUnbind');
+                    // 4
                     form.button('§lCancel');
                     form.show(player).then(r => {
                         if (r.selection === 0) {
@@ -150,6 +195,21 @@ world.beforeEvents.itemUse.subscribe((data) => {
                                 // turn on
                                 player.sendMessage(`§aPlacing ${formatIdToName(savedItem)} enabled!`);
                                 satchelItem.setDynamicProperty("satchel:placeBlock", true);
+                                satchelItem.setDynamicProperty("satchel:placeSatchel", false);
+                                con?.setItem(player.selectedSlotIndex, satchelItem);
+                            }
+                        }
+                        if (r.selection === 1) {
+                            // Place Satchel
+                            if (satchelItem.getDynamicProperty("satchel:placeSatchel")) {
+                                // turn off
+                                satchelItem.setDynamicProperty("satchel:placeSatchel", false);
+                                con?.setItem(player.selectedSlotIndex, satchelItem);
+                            }
+                            else {
+                                // turn on
+                                satchelItem.setDynamicProperty("satchel:placeSatchel", true);
+                                satchelItem.setDynamicProperty("satchel:placeBlock", false);
                                 con?.setItem(player.selectedSlotIndex, satchelItem);
                             }
                         }
@@ -211,6 +271,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe(({ block, blockFace, itemSt
         let satchelLore = satchelItem?.getLore();
         let savedItem = satchelItem?.getDynamicProperty("satchel:item");
         let savedAmount = satchelItem?.getDynamicProperty("satchel:amount");
+        let satchelCredential = satchelItem?.getDynamicProperty("satchel:credential");
         system.run(() => {
             const satchelLore = itemStack.getLore();
             if (itemStack.getDynamicProperty("satchel:placeBlock")) {
@@ -241,6 +302,76 @@ world.beforeEvents.playerInteractWithBlock.subscribe(({ block, blockFace, itemSt
                     }
                 }
             }
+            else if (satchelItem.getDynamicProperty("satchel:placeSatchel")) {
+                if (player.isSneaking)
+                    return;
+                if (block.north(1)?.isAir ||
+                    block.south(1)?.isAir ||
+                    block.east(1)?.isAir ||
+                    block.west(1)?.isAir ||
+                    block.above(1)?.isAir ||
+                    block.below(1)?.isAir) {
+                    try {
+                        const faceMap = {
+                            [Direction.North]: () => block.north(1),
+                            [Direction.South]: () => block.south(1),
+                            [Direction.East]: () => block.east(1),
+                            [Direction.West]: () => block.west(1),
+                            [Direction.Up]: () => block.above(1),
+                            [Direction.Down]: () => block.below(1)
+                        };
+                        let faceBlock = faceMap[blockFace]?.();
+                        let faceLocationCenter = faceBlock?.center();
+                        let faceLocation = faceBlock?.location;
+                        if (faceLocationCenter === undefined || faceLocation === undefined)
+                            return;
+                        let satchelSpawn = dim.spawnEntity("dave:satchel", {
+                            x: faceLocationCenter.x,
+                            y: faceLocation.y,
+                            z: faceLocationCenter.z
+                        });
+                        satchelSpawn.triggerEvent(satchelItem.typeId);
+                        console.warn(faceLocationCenter.x, faceLocationCenter.y, faceLocationCenter.z);
+                        satchelSpawn.setDynamicProperty("satchel:item", savedItem);
+                        satchelSpawn.setDynamicProperty("satchel:amount", savedAmount);
+                        satchelSpawn.setDynamicProperty("satchel:credential", satchelCredential);
+                        satchelSpawn.setDynamicProperty("satchel:color", satchelItem.typeId);
+                        con?.setItem(player.selectedSlotIndex, undefined);
+                    }
+                    catch (error) {
+                        player.sendMessage(`${error}`);
+                        return;
+                    }
+                }
+            }
         });
+    }
+});
+world.afterEvents.playerInteractWithEntity.subscribe(({ player, target }) => {
+    let inv = player.getComponent(EntityComponentTypes.Inventory);
+    let con = inv?.container;
+    if (player.isSneaking && target.typeId === "dave:satchel" && con && inv) {
+        let satchelSpawn = target;
+        let savedItem = satchelSpawn.getDynamicProperty("satchel:item");
+        let savedAmount = satchelSpawn.getDynamicProperty("satchel:amount");
+        let satchelCredential = satchelSpawn.getDynamicProperty("satchel:credential");
+        let satchelColor = satchelSpawn.getDynamicProperty("satchel:color");
+        console.warn(satchelColor);
+        if (!con.getItem(player.selectedSlotIndex)) {
+            let newSatchel = new ItemStack(satchelColor);
+            newSatchel.setDynamicProperty("satchel:credential", satchelCredential);
+            newSatchel.setDynamicProperty("satchel:item", savedItem);
+            newSatchel.setDynamicProperty("satchel:amount", savedAmount);
+            newSatchel.setDynamicProperty("satchel:enable", true);
+            newSatchel?.setLore([
+                `§r§7Item:§e ${formatIdToName(savedItem)}`,
+                `§r§7Amount:§e ${savedAmount}`, // FIXED: use countAmount, not savedAmount
+            ]);
+            con.setItem(player.selectedSlotIndex, newSatchel);
+            satchelSpawn.remove();
+        }
+        else {
+            player.sendMessage("§cEmpty the selected slot to pick up the satchel!");
+        }
     }
 });

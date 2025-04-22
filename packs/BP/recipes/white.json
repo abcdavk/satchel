@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+    "identifier": "dave:white_satchel"
+    },
+
+    
+    "tags": [ "crafting_table" ],
+    "ingredients": [
+      {
+        "item": "dave:satchel"
+      },
+      {
+        "item": "minecraft:white_dye"
+      }
+    ],
+	  "unlock": [
+      {
+        "item": "dave:satchel"
+      }
+    ],
+    "result": {
+      "item": "dave:white_satchel",
+      "count": 1
+    }
+  }
+}

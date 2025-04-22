@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+    "identifier": "dave:light_gray_satchel"
+    },
+
+    
+    "tags": [ "crafting_table" ],
+    "ingredients": [
+      {
+        "item": "dave:satchel"
+      },
+      {
+        "item": "minecraft:light_gray_dye"
+      }
+    ],
+	  "unlock": [
+      {
+        "item": "dave:satchel"
+      }
+    ],
+    "result": {
+      "item": "dave:light_gray_satchel",
+      "count": 1
+    }
+  }
+}

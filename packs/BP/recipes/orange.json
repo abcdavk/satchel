@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+    "identifier": "dave:orange_satchel"
+    },
+
+    
+    "tags": [ "crafting_table" ],
+    "ingredients": [
+      {
+        "item": "dave:satchel"
+      },
+      {
+        "item": "minecraft:orange_dye"
+      }
+    ],
+	  "unlock": [
+      {
+        "item": "dave:satchel"
+      }
+    ],
+    "result": {
+      "item": "dave:orange_satchel",
+      "count": 1
+    }
+  }
+}

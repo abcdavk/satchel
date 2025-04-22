@@ -1,0 +1,244 @@
+{
+    "format_version": "1.16.0",
+    "minecraft:entity": {
+        "description": {
+            "identifier": "dave:satchel",
+            "is_spawnable": true,
+            "is_summonable": true,
+            "is_experimental": false
+        },
+        
+        "component_groups": {
+            "dave:blue_satchel": {
+                "minecraft:variant": {
+                "value": 1
+                }
+            },
+            "dave:black_satchel": {
+                "minecraft:variant": {
+                "value": 2
+                }
+            },
+            "dave:red_satchel": {
+                "minecraft:variant": {
+                "value": 3
+                }
+            },
+            "dave:green_satchel": {
+                "minecraft:variant": {
+                "value": 4
+                }
+            },
+            "dave:brown_satchel": {
+                "minecraft:variant": {
+                "value": 5
+                }
+            },
+            "dave:purple_satchel": {
+                "minecraft:variant": {
+                "value": 6
+                }
+            },
+            "dave:cyan_satchel": {
+                "minecraft:variant": {
+                "value": 7
+                }
+            },
+            "dave:light_gray_satchel": {
+                "minecraft:variant": {
+                "value": 8
+                }
+            },
+            "dave:gray_satchel": {
+                "minecraft:variant": {
+                "value": 9
+                }
+            },
+            "dave:pink_satchel": {
+                "minecraft:variant": {
+                "value": 10
+                }
+            },
+            "dave:lime_satchel": {
+                "minecraft:variant": {
+                "value": 11
+                }
+            },
+            "dave:yellow_satchel": {
+                "minecraft:variant": {
+                "value": 12
+                }
+            },
+            "dave:light_blue_satchel": {
+                "minecraft:variant": {
+                "value": 13
+                }
+            },
+            "dave:magenta_satchel": {
+                "minecraft:variant": {
+                "value": 14
+                }
+            },
+            "dave:orange_satchel": {
+                "minecraft:variant": {
+                "value": 15
+                }
+            },
+            "dave:white_satchel": {
+                "minecraft:variant": {
+                "value": 16
+                }
+            }
+        },
+        "components": {
+            "minecraft:collision_box": {
+                "height": 0.56, 
+                "width": 1.0
+            },
+            "minecraft:type_family": { "family": ["satchel"] },
+            "minecraft:health": { "value": 10, "max": 10 },
+            "minecraft:damage_sensor": {
+                "triggers": { "cause": "all", "deals_damage": false }
+            },
+            "minecraft:interact": {
+                "interactions": [
+                    {
+                        "on_interact": {
+                            "filters": [
+                                {
+                                    "test":"is_family",
+                                    "subject": "other",
+                                    "value": "player"
+                                }
+                            ],
+                            "target": "self"
+                        }
+                    }
+                ]
+            },
+            "minecraft:inventory": {
+                "additional_slots_per_strength": 0,
+                "can_be_siphoned_from": true,
+                "container_type": "container",
+                "inventory_size": 1,
+                "private": true,
+                "restrict_to_owner": true
+            }
+        },
+        "events": {
+            "dave:satchel": {},
+            "dave:blue_satchel": {
+                "add": {
+                    "component_groups": [
+                        "dave:blue_satchel"
+                    ]
+                }
+            },
+            "dave:black_satchel": {
+                "add": {
+                    "component_groups": [
+                        "dave:black_satchel"
+                    ]
+                }
+            },
+            "dave:red_satchel": {
+                "add": {
+                    "component_groups": [
+                        "dave:red_satchel"
+                    ]
+                }
+            },
+            "dave:green_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:green_satchel"
+                ]
+                }
+            },
+            "dave:brown_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:brown_satchel"
+                ]
+                }
+            },
+            "dave:purple_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:purple_satchel"
+                ]
+                }
+            },
+            "dave:cyan_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:cyan_satchel"
+                ]
+                }
+            },
+            "dave:light_gray_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:light_gray_satchel"
+                ]
+                }
+            },
+            "dave:gray_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:gray_satchel"
+                ]
+                }
+            },
+            "dave:pink_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:pink_satchel"
+                ]
+                }
+            },
+            "dave:lime_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:lime_satchel"
+                ]
+                }
+            },
+            "dave:yellow_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:yellow_satchel"
+                ]
+                }
+            },
+            "dave:light_blue_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:light_blue_satchel"
+                ]
+                }
+            },
+            "dave:magenta_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:magenta_satchel"
+                ]
+                }
+            },
+            "dave:orange_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:orange_satchel"
+                ]
+                }
+            },
+            "dave:white_satchel": {
+                "add": {
+                "component_groups": [
+                    "dave:white_satchel"
+                ]
+                }
+            }
+        }
+    }
+}

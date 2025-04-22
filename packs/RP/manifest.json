@@ -2,7 +2,7 @@
     "format_version": 2,
     "header": {
       "name": "Satchel",
-      "description": "by abcdavk",
+      "description": "Store unlimited single items",
       "uuid": "866bac48-1da5-11f0-b886-278becc25966",
       "version": [1, 0, 0],
       "min_engine_version": [1, 18, 0]

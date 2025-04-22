@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.41",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dave:satchel",
+      "min_engine_version": "1.8.0",
+      "materials": { "default": "shulker" },
+      "textures": { 
+        "default": "textures/entity/satchel",
+        "blue": "textures/entity/satchel/blue",
+        "white": "textures/entity/satchel/white",
+        "orange": "textures/entity/satchel/orange",
+        "magenta": "textures/entity/satchel/magenta",
+        "light_blue": "textures/entity/satchel/light_blue",
+        "yellow": "textures/entity/satchel/yellow",
+        "lime": "textures/entity/satchel/lime",
+        "pink": "textures/entity/satchel/pink",
+        "gray": "textures/entity/satchel/gray",
+        "light_gray": "textures/entity/satchel/light_gray",
+        "cyan": "textures/entity/satchel/cyan",
+        "purple": "textures/entity/satchel/purple",
+        "brown": "textures/entity/satchel/brown",
+        "green": "textures/entity/satchel/green",
+        "red": "textures/entity/satchel/red",
+        "black": "textures/entity/satchel/black"
+      },
+      "geometry": {
+        "default": "geometry.satchel"
+      },
+      "render_controllers": [ "controller.render.satchel" ]
+    }
+  }
+}
